@@ -249,6 +249,16 @@ public class CallbackQueryHandler
                 }
                 break;
 
+            case "broadcast":
+                _stateService.SetState(userId, UserState.AwaitingBroadcastMessage);
+                await _bot.SendMessage(
+                    chatIdTyped,
+                    "Введите текст уведомления для всех пользователей.",
+                    replyMarkup: KeyboardBuilder.CancelReplyKeyboard(),
+                    cancellationToken: ct
+                );
+                break;
+
             case "user_configs":
                 if (parts.Length == 2)
                 {

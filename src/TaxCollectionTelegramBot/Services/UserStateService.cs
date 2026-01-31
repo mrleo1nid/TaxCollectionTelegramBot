@@ -19,6 +19,9 @@ public enum UserState
     AwaitingCollectionAmount,
     AwaitingCollectionDescription,
     AwaitingCollectionPaymentDetails,
+
+    // Admin broadcast
+    AwaitingBroadcastMessage,
 }
 
 public class UserStateData

@@ -151,6 +151,10 @@ public class MessageHandler
             case UserState.AwaitingCollectionPaymentDetails:
                 await HandleCollectionPaymentDetailsInput(chatId, userId, text, state, ct);
                 break;
+
+            case UserState.AwaitingBroadcastMessage:
+                await HandleBroadcastMessageInput(chatId, userId, text, ct);
+                break;
         }
     }
 
@@ -502,6 +506,57 @@ public class MessageHandler
                 + $"📝 Цель: {collection.Description}\n\n"
                 + $"📢 Уведомлено пользователей: {notifiedCount}\n\n"
                 + $"Когда все ответят, нажмите \"Завершить сбор\" для распределения суммы.",
+            replyMarkup: KeyboardBuilder.RemoveReplyKeyboard(),
+            cancellationToken: ct
+        );
+        await ShowMainMenu(chatId, true, ct);
+    }
+
+    private async Task HandleBroadcastMessageInput(
+        long chatId,
+        long userId,
+        string text,
+        CancellationToken ct
+    )
+    {
+        var users = await _userService.GetAllUsersExceptAdminAsync(_adminId, ct);
+        if (users.Count == 0)
+        {
+            _stateService.ClearState(userId);
+            await _bot.SendMessage(
+                chatId,
+                "Нет пользователей для уведомления.",
+                replyMarkup: KeyboardBuilder.RemoveReplyKeyboard(),
+                cancellationToken: ct
+            );
+            await ShowMainMenu(chatId, true, ct);
+            return;
+        }
+
+        var successCount = 0;
+        var failedCount = 0;
+        foreach (var user in users)
+        {
+            try
+            {
+                await _bot.SendMessage(user.TelegramId, text.Trim(), cancellationToken: ct);
+                successCount++;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send broadcast to user {UserId}", user.TelegramId);
+                failedCount++;
+            }
+        }
+
+        _stateService.ClearState(userId);
+        var resultMessage =
+            failedCount == 0
+                ? $"Уведомление отправлено {successCount} пользователям."
+                : $"Уведомление отправлено {successCount} пользователям. Не доставлено: {failedCount}.";
+        await _bot.SendMessage(
+            chatId,
+            resultMessage,
             replyMarkup: KeyboardBuilder.RemoveReplyKeyboard(),
             cancellationToken: ct
         );

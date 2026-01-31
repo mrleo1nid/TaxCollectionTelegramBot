@@ -31,6 +31,10 @@ public static class KeyboardBuilder
                     "admin:user_configs"
                 ),
             },
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData("📢 Уведомление всем", "admin:broadcast"),
+            },
         };
 
         if (hasActiveCollection && activeCollection != null)
