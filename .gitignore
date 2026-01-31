@@ -41,7 +41,6 @@ secrets.json
 # SQLite database
 *.db
 *.db-journal
-data/
 
 # Docker
 docker-compose.override.yml
