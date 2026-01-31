@@ -1,0 +1,47 @@
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Bb]uild/
+bld/
+bin/
+obj/
+
+# IDE
+.vs/
+.vscode/
+*.user
+*.suo
+*.sln.docstates
+.idea/
+
+# NuGet
+*.nupkg
+**/packages/*
+*.nuget.props
+
+# Test results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+
+# Misc
+*.log
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# User secrets
+secrets.json
+
+# Environment variables
+.env
+
+# SQLite database
+*.db
+*.db-journal
+data/
+
+# Docker
+docker-compose.override.yml

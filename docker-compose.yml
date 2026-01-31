@@ -1,0 +1,21 @@
+services:
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tax-collection-bot
+    restart: unless-stopped
+    environment:
+      - BotConfiguration__Token=${BOT_TOKEN}
+      - BotConfiguration__AdminId=${ADMIN_ID}
+      - ConnectionStrings__DefaultConnection=Data Source=/app/data/bot.db
+    volumes:
+      - bot-data:/app/data
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  bot-data:
