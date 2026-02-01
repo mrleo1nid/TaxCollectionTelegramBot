@@ -29,6 +29,13 @@ public static class KeyboardBuilder
             new[] { InlineKeyboardButton.WithCallbackData("👥 Пользователи", "admin:users") },
             new[]
             {
+                InlineKeyboardButton.WithCallbackData(
+                    "🗑️ Удалить пользователя",
+                    "admin:delete_user"
+                ),
+            },
+            new[]
+            {
                 InlineKeyboardButton.WithCallbackData("➕ Добавить конфиг", "admin:add_config"),
                 InlineKeyboardButton.WithCallbackData(
                     "📋 Конфиги пользователей",
@@ -151,6 +158,23 @@ public static class KeyboardBuilder
         }
 
         return new InlineKeyboardMarkup(rows);
+    }
+
+    public static InlineKeyboardMarkup DeleteUserConfirmationKeyboard(long userId)
+    {
+        return new InlineKeyboardMarkup(
+            new[]
+            {
+                new[]
+                {
+                    InlineKeyboardButton.WithCallbackData(
+                        "✅ Да, удалить",
+                        $"admin:delete_user_confirm:{userId}"
+                    ),
+                    InlineKeyboardButton.WithCallbackData("❌ Отмена", "admin:menu"),
+                },
+            }
+        );
     }
 
     public static InlineKeyboardMarkup BackToMainMenu(bool isAdmin)

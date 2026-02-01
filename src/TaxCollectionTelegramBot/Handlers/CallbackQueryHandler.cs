@@ -263,6 +263,73 @@ public class CallbackQueryHandler
                 }
                 break;
 
+            case "delete_user":
+                if (parts.Length == 2)
+                {
+                    var usersForDelete = await _userService.GetAllUsersExceptAdminAsync(
+                        _adminId,
+                        ct
+                    );
+                    if (usersForDelete.Count == 0)
+                    {
+                        await EditMenuAsync(
+                            chatIdTyped,
+                            messageId,
+                            "Пользователей пока нет.",
+                            KeyboardBuilder.BackToMainMenu(true),
+                            null,
+                            ct
+                        );
+                    }
+                    else
+                    {
+                        await EditMenuAsync(
+                            chatIdTyped,
+                            messageId,
+                            "Выберите пользователя для удаления:",
+                            KeyboardBuilder.UserList(usersForDelete, "admin:delete_user"),
+                            null,
+                            ct
+                        );
+                    }
+                }
+                else if (parts.Length >= 3 && long.TryParse(parts[2], out var deleteTargetUserId))
+                {
+                    var targetUser = await _userService.GetUserAsync(deleteTargetUserId, ct);
+                    var displayName =
+                        targetUser?.FirstName
+                        ?? targetUser?.Username
+                        ?? deleteTargetUserId.ToString();
+                    await EditMenuAsync(
+                        chatIdTyped,
+                        messageId,
+                        $"Удалить пользователя {displayName}? Данные и участие в сборах будут удалены.",
+                        KeyboardBuilder.DeleteUserConfirmationKeyboard(deleteTargetUserId),
+                        null,
+                        ct
+                    );
+                }
+                break;
+
+            case "delete_user_confirm":
+                if (parts.Length >= 3 && long.TryParse(parts[2], out var confirmDeleteUserId))
+                {
+                    var (success, resultMessage) = await _userService.DeleteUserAsync(
+                        confirmDeleteUserId,
+                        _adminId,
+                        ct
+                    );
+                    await EditMenuAsync(
+                        chatIdTyped,
+                        messageId,
+                        success ? $"✅ {resultMessage}" : $"❌ {resultMessage}",
+                        KeyboardBuilder.BackToMainMenu(true),
+                        null,
+                        ct
+                    );
+                }
+                break;
+
             case "add_config":
                 var usersForConfig = await _userService.GetAllUsersExceptAdminAsync(_adminId, ct);
                 if (usersForConfig.Count == 0)

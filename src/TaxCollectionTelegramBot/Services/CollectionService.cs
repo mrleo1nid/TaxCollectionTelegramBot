@@ -354,4 +354,75 @@ public class CollectionService
             p.Status == ParticipantStatus.Participating || p.Status == ParticipantStatus.Declined
         );
     }
+
+    /// <summary>
+    /// IDs активных сборов (Pending, AwaitingConfirmation, AwaitingPayment), где участвует пользователь.
+    /// </summary>
+    public async Task<List<int>> GetActiveCollectionIdsByParticipantAsync(
+        long userId,
+        CancellationToken ct = default
+    )
+    {
+        var activeStatuses = new[]
+        {
+            CollectionStatus.Pending,
+            CollectionStatus.AwaitingConfirmation,
+            CollectionStatus.AwaitingPayment,
+        };
+
+        return await _context
+            .CollectionParticipants.Where(p => p.UserId == userId)
+            .Join(
+                _context.Collections.Where(c => activeStatuses.Contains(c.Status)),
+                p => p.CollectionId,
+                c => c.Id,
+                (p, _) => p.CollectionId
+            )
+            .Distinct()
+            .ToListAsync(ct);
+    }
+
+    /// <summary>
+    /// Пересчитывает AmountToPay для оставшихся участников после удаления одного.
+    /// Для Pending — не требуется (суммы ещё не назначены).
+    /// Для AwaitingConfirmation и AwaitingPayment — amountPerPerson = TotalAmount / count участвующих.
+    /// </summary>
+    public async Task RecalculateAmountsAfterParticipantRemovalAsync(
+        int collectionId,
+        CancellationToken ct = default
+    )
+    {
+        var collection = await _context
+            .Collections.Include(c => c.Participants)
+            .FirstOrDefaultAsync(c => c.Id == collectionId, ct);
+
+        if (collection == null)
+            return;
+
+        if (collection.Status == CollectionStatus.Pending)
+            return;
+
+        var payingParticipants = collection
+            .Participants.Where(p =>
+                p.Status == ParticipantStatus.Participating
+                || p.Status == ParticipantStatus.Confirmed
+            )
+            .ToList();
+
+        if (payingParticipants.Count == 0)
+        {
+            collection.Status = CollectionStatus.Cancelled;
+            await _context.SaveChangesAsync(ct);
+            return;
+        }
+
+        var amountPerPerson = Math.Round(collection.TotalAmount / payingParticipants.Count, 2);
+
+        foreach (var participant in payingParticipants)
+        {
+            participant.AmountToPay = amountPerPerson;
+        }
+
+        await _context.SaveChangesAsync(ct);
+    }
 }

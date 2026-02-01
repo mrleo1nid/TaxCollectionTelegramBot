@@ -7,10 +7,12 @@ namespace TaxCollectionTelegramBot.Services;
 public class UserService
 {
     private readonly AppDbContext _context;
+    private readonly CollectionService _collectionService;
 
-    public UserService(AppDbContext context)
+    public UserService(AppDbContext context, CollectionService collectionService)
     {
         _context = context;
+        _collectionService = collectionService;
     }
 
     public async Task<User> GetOrCreateUserAsync(
@@ -87,5 +89,35 @@ public class UserService
             .OrderBy(u => u.FirstName)
             .ThenBy(u => u.Username)
             .ToListAsync(ct);
+    }
+
+    public async Task<(bool Success, string Message)> DeleteUserAsync(
+        long targetUserId,
+        long adminId,
+        CancellationToken ct = default
+    )
+    {
+        if (targetUserId == adminId)
+            return (false, "Нельзя удалить администратора.");
+
+        var user = await _context.Users.FindAsync([targetUserId], ct);
+        if (user == null)
+            return (false, "Пользователь не найден.");
+
+        var affectedCollectionIds =
+            await _collectionService.GetActiveCollectionIdsByParticipantAsync(targetUserId, ct);
+
+        _context.Users.Remove(user);
+        await _context.SaveChangesAsync(ct);
+
+        foreach (var collectionId in affectedCollectionIds)
+        {
+            await _collectionService.RecalculateAmountsAfterParticipantRemovalAsync(
+                collectionId,
+                ct
+            );
+        }
+
+        return (true, "Пользователь удалён.");
     }
 }
