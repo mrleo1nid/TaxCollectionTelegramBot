@@ -11,6 +11,10 @@ public static class KeyboardBuilder
             new[]
             {
                 new[] { InlineKeyboardButton.WithCallbackData("📋 Мои конфиги", "user:configs") },
+                new[]
+                {
+                    InlineKeyboardButton.WithCallbackData("📖 Инструкция", "user:instruction"),
+                },
             }
         );
     }

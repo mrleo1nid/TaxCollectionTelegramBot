@@ -9,8 +9,10 @@ services:
       - BotConfiguration__Token=${BOT_TOKEN}
       - BotConfiguration__AdminId=${ADMIN_ID}
       - ConnectionStrings__DefaultConnection=Data Source=/app/data/bot.db
+      - Instruction__FilePath=${INSTRUCTION_FILE_PATH:-/app/instruction.txt}
     volumes:
       - bot-data:/app/data
+      - ./instruction.txt:/app/instruction.txt
     logging:
       driver: "json-file"
       options:

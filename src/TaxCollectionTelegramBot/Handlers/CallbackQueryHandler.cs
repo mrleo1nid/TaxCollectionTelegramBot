@@ -1,4 +1,6 @@
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using TaxCollectionTelegramBot;
 using TaxCollectionTelegramBot.Data.Entities;
 using TaxCollectionTelegramBot.Services;
 using Telegram.Bot;
@@ -16,6 +18,8 @@ public class CallbackQueryHandler
     private readonly CollectionService _collectionService;
     private readonly UserStateService _stateService;
     private readonly long _adminId;
+    private readonly IHostEnvironment _hostEnvironment;
+    private readonly InstructionOptions _instructionOptions;
     private readonly ILogger<CallbackQueryHandler> _logger;
 
     public CallbackQueryHandler(
@@ -25,6 +29,8 @@ public class CallbackQueryHandler
         CollectionService collectionService,
         UserStateService stateService,
         IOptions<BotConfiguration> config,
+        IHostEnvironment hostEnvironment,
+        IOptions<InstructionOptions> instructionOptions,
         ILogger<CallbackQueryHandler> logger
     )
     {
@@ -34,6 +40,8 @@ public class CallbackQueryHandler
         _collectionService = collectionService;
         _stateService = stateService;
         _adminId = config.Value.AdminId;
+        _hostEnvironment = hostEnvironment;
+        _instructionOptions = instructionOptions.Value;
         _logger = logger;
     }
 
@@ -165,6 +173,39 @@ public class CallbackQueryHandler
                         ct
                     );
                 }
+                break;
+            case "instruction":
+                var instructionPath =
+                    string.IsNullOrWhiteSpace(_instructionOptions.FilePath)
+                        ? Path.Combine(_hostEnvironment.ContentRootPath, "instruction.txt")
+                    : Path.IsPathRooted(_instructionOptions.FilePath) ? _instructionOptions.FilePath
+                    : Path.Combine(_hostEnvironment.ContentRootPath, _instructionOptions.FilePath);
+                string instructionText;
+                try
+                {
+                    instructionText = await File.ReadAllTextAsync(instructionPath, ct);
+                    if (string.IsNullOrWhiteSpace(instructionText))
+                        instructionText = "Инструкция временно недоступна.";
+                    else if (instructionText.Length > 4096)
+                        instructionText = instructionText[..4096];
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(
+                        ex,
+                        "Could not read instruction file from {Path}",
+                        instructionPath
+                    );
+                    instructionText = "Инструкция временно недоступна.";
+                }
+                await EditMenuAsync(
+                    chatIdTyped,
+                    messageId,
+                    instructionText,
+                    KeyboardBuilder.BackToMainMenu(false),
+                    null,
+                    ct
+                );
                 break;
         }
     }

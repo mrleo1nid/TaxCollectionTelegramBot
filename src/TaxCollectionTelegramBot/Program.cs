@@ -9,6 +9,9 @@ var builder = Host.CreateApplicationBuilder(args);
 
 // Configuration
 builder.Services.Configure<BotConfiguration>(builder.Configuration.GetSection("BotConfiguration"));
+builder.Services.Configure<InstructionOptions>(
+    builder.Configuration.GetSection(InstructionOptions.SectionName)
+);
 
 var botConfig =
     builder.Configuration.GetSection("BotConfiguration").Get<BotConfiguration>()
