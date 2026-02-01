@@ -995,13 +995,13 @@ public class CallbackQueryHandler
             s =>
             {
                 s.SelectedUserId = selectedUserId;
-                s.State = UserState.AwaitingConfigName;
+                s.State = UserState.AwaitingConfigText;
             }
         );
 
         await _bot.SendMessage(
             message.Chat.Id,
-            "📝 Введите название конфига:",
+            "📄 Введите текст конфига (имя будет взято из части после #):",
             replyMarkup: KeyboardBuilder.CancelReplyKeyboard(),
             cancellationToken: ct
         );

@@ -183,6 +183,19 @@ public class MessageHandler
         );
     }
 
+    private static string ExtractConfigNameFromText(string configText)
+    {
+        var trimmed = configText.Trim();
+        var hashIndex = trimmed.IndexOf('#');
+        if (hashIndex >= 0 && hashIndex < trimmed.Length - 1)
+        {
+            var name = trimmed.Substring(hashIndex + 1).Trim();
+            if (!string.IsNullOrEmpty(name))
+                return name;
+        }
+        return "Конфиг " + DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+    }
+
     private async Task HandleConfigTextInput(
         long chatId,
         long userId,
@@ -191,7 +204,7 @@ public class MessageHandler
         CancellationToken ct
     )
     {
-        if (state.SelectedUserId == null || state.ConfigName == null)
+        if (state.SelectedUserId == null)
         {
             _stateService.ClearState(userId);
             await _bot.SendMessage(
@@ -204,12 +217,10 @@ public class MessageHandler
             return;
         }
 
-        await _configService.AddConfigAsync(
-            state.SelectedUserId.Value,
-            state.ConfigName,
-            text.Trim(),
-            ct
-        );
+        var configText = text.Trim();
+        var configName = ExtractConfigNameFromText(configText);
+
+        await _configService.AddConfigAsync(state.SelectedUserId.Value, configName, configText, ct);
         _stateService.ClearState(userId);
 
         var user = await _userService.GetUserAsync(state.SelectedUserId.Value, ct);
@@ -217,7 +228,7 @@ public class MessageHandler
 
         await _bot.SendMessage(
             chatId,
-            $"✅ Конфиг \"{state.ConfigName}\" добавлен для {userName}.",
+            $"✅ Конфиг \"{configName}\" добавлен для {userName}.",
             replyMarkup: KeyboardBuilder.RemoveReplyKeyboard(),
             cancellationToken: ct
         );
@@ -228,7 +239,7 @@ public class MessageHandler
         {
             await _bot.SendMessage(
                 state.SelectedUserId.Value,
-                $"📢 Вам добавлен новый конфиг: {state.ConfigName}",
+                $"📢 Вам добавлен новый конфиг: {configName}",
                 replyMarkup: KeyboardBuilder.MainMenuUser(),
                 cancellationToken: ct
             );
